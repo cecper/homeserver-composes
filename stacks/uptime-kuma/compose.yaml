@@ -1,0 +1,44 @@
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime-kuma
+    restart: always
+    #ports:
+    #- "3001:3001"  # This maps the container port "3001" to the host port "3001"
+    volumes:
+      - ./data:/app/data # Configuring persistent storage
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - TZ=${TZ}
+      - UMASK=0022 # Set your file permissions manually
+    networks:
+      - kuma_network # add your own custom network config
+      - proxy
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://localhost:3001
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      timeout: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.uptimekuma.rule=Host(`uk.${SUBDOMAIN}`)
+      - traefik.http.routers.uptimekuma.entrypoints=websecure
+      - traefik.http.routers.uptimekuma.tls=true
+      - traefik.http.routers.uptimekuma.tls.certresolver=cloudflare
+      - traefik.http.services.uptimekuma.loadBalancer.server.port=3001
+      - traefik.http.routers.uptimekuma.middlewares=authentik@docker
+networks:
+  kuma_network:
+    driver: bridge
+  proxy:
+    external: true

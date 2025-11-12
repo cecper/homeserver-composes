@@ -1,0 +1,27 @@
+services:
+  headscale:
+    image: headscale/headscale:latest
+    pull_policy: always
+    container_name: headscale
+    restart: unless-stopped
+    command: serve
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    networks:
+      - proxy
+    volumes:
+      - ./config:/etc/headscale
+      - ./data:/var/lib/headscale
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.headscale-rtr.rule=Host(`headscale.${DOMAIN}`)
+      - traefik.http.routers.headscale-rtr.entrypoints=websecure
+      - traefik.http.routers.headscale-rtr.tls.certresolver=cloudflare
+      - traefik.http.services.headscale-svc.loadbalancer.server.port=8080
+      - traefik.http.routers.headscale-rtr.service=headscale-svc
+      - traefik.docker.network=proxy
+networks:
+  proxy:
+    external: true

@@ -1,0 +1,41 @@
+services:
+  jellyseerr:
+    #user: ${PUID}:${PGID}
+    image: ghcr.io/fallenbagel/jellyseerr:latest
+    init: true
+    container_name: jellyseerr
+    environment:
+      - LOG_LEVEL=debug
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    #    ports:
+    #      - 5055:5055
+    volumes:
+      - ./jellyseerr-data:/app/config
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/status
+        || exit 1
+      start_period: 20s
+      timeout: 3s
+      interval: 15s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - proxy
+      - autotorrents_default
+      - jellyfin_jellyseerr
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.jellyseerr.rule=Host(`jellyseerr.${SUBDOMAIN}`)
+      - traefik.http.routers.jellyseerr.entrypoints=websecure
+      - traefik.http.routers.jellyseerr.tls.certresolver=cloudflare
+      - traefik.http.services.jellyseerr.loadbalancer.server.port=5055
+      #- traefik.http.routers.jellyseerr.middlewares=authentik@docker
+networks:
+  proxy:
+    external: true
+  autotorrents_default:
+    external: true
+  jellyfin_jellyseerr:
+    external: true

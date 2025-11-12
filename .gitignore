@@ -1,0 +1,13 @@
+# Ignore everything
+*
+
+# But not these files...
+!docker-compose.yaml
+!docker-compose.yml
+!env.example
+!compose.yaml
+!compose.yml
+!.env.example
+!scripts/*
+# ...even if they are in subdirectories
+!*/

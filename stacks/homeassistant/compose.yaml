@@ -1,0 +1,66 @@
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    restart: unless-stopped
+    privileged: true
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ./homeassistant/config:/config
+    devices:
+      - /dev/serial/by-id/usb-Itead_Sonoff_Zigbee_3.0_USB_Dongle_Plus_V2_feb38c520b13ef118c656db8bf9df066-if00-port0:/dev/ttyUSB0
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.homeassistant.rule=Host(`ha.${SUBDOMAIN}`)
+      - traefik.http.routers.homeassistant.entrypoints=websecure
+      - traefik.http.routers.homeassistant.tls.certresolver=cloudflare
+      - traefik.http.services.homeassistant.loadbalancer.server.port=8123
+      #- traefik.http.routers.homeassistant.middlewares=authentik@docker
+    networks:
+      - proxy
+      - hassnet
+  # mqtt:
+  #   image: eclipse-mosquitto:latest
+  #   container_name: mosquitto
+  #   restart: unless-stopped
+  #   #ports:
+  #   #- "1883:1883"
+  #   #- "9001:9001"
+  #   volumes:
+  #     - ./mosquitto/config:/mosquitto/config
+  #     - ./mosquitto/data:/mosquitto/data
+  #     - ./mosquitto/log:/mosquitto/log
+  #   networks:
+  #     - hassnet
+  # zigbee2mqtt:
+  #   image: koenkk/zigbee2mqtt:latest
+  #   container_name: zigbee2mqtt
+  #   restart: unless-stopped
+  #   privileged: true
+  #   depends_on:
+  #     - mqtt
+  #   environment:
+  #     - TZ=Europe/London
+  #   volumes:
+  #     - ./zigbee2mqtt/data:/app/data
+  #   devices:
+  #     - /dev/serial/by-id/usb-Itead_Sonoff_Zigbee_3.0_USB_Dongle_Plus_V2_feb38c520b13ef118c656db8bf9df066-if00-port0:/dev/ttyUSB0
+  #   networks:
+  #     - proxy
+  #     - hassnet
+  #   labels:
+  #     - traefik.enable=true
+  #     - traefik.docker.network=proxy
+  #     - traefik.http.routers.zigbee2mqtt.rule=Host(`z2m.${SUBDOMAIN}`)
+  #     - traefik.http.routers.zigbee2mqtt.entrypoints=websecure
+  #     - traefik.http.routers.zigbee2mqtt.tls.certresolver=cloudflare
+  #     - traefik.http.services.zigbee2mqtt.loadbalancer.server.port=8080
+networks:
+  hassnet:
+    driver: bridge
+  proxy:
+    external: true

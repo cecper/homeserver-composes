@@ -1,0 +1,41 @@
+services:
+  jellyfin:
+    image: jellyfin/jellyfin
+    container_name: jellyfin
+    user: ${PUID}:${PGID}
+    group_add:
+      - "992" # Change this to match your "render" host group id
+    networks:
+      - proxy
+      - jellyfin_jellyseerr
+    ports:
+      - 8096:8096/tcp
+      #- 7359:7359/udp
+    volumes:
+      - ./config:/config
+      - /Big-pool/subvol-100/media:/media
+    restart: unless-stopped
+    environment:
+      - JELLYFIN_PublishedServerUrl=https://jellyfin.${SUBDOMAIN}
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.jellyfin.entrypoints=websecure
+      - traefik.http.routers.jellyfin.rule=Host(`jellyfin.${SUBDOMAIN}`)
+      - traefik.http.routers.jellyfin.tls.certresolver=cloudflare
+      - traefik.http.services.jellyfin.loadbalancer.server.port=8096
+      # (Optional) Enable compression for better streaming performance
+      - traefik.http.middlewares.jellyfin-compress.compress=true
+      - traefik.http.routers.jellyfin.middlewares=jellyfin-compress
+networks:
+  jellyfin_jellyseerr:
+    name: jellyfin_jellyseerr
+    driver: bridge
+  proxy:
+    external: true

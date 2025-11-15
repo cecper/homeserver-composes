@@ -9,5 +9,7 @@
 !compose.yml
 !.env.example
 !scripts/*
+!README.md
+
 # ...even if they are in subdirectories
 !*/
